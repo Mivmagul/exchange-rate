@@ -1,0 +1,21 @@
+name: Build and Run Exchange Rate Service
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+      - name: Build application
+        run: ./mvnw clean package
+      - name: Run application
+        env:
+          EXCHANGE_RATE_API_ACCESS_KEY: ${{ secrets.FIXER_IO_ACCESS_KEY }}
+        run: java -jar target/exchange-rate-service.jar
