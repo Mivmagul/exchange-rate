@@ -1,1 +1,10 @@
+spring:
+  profiles:
+    active: prod
+  cache:
+    type: simple
 
+exchange-rate:
+  api:
+    url: https://data.fixer.io/api/latest
+    access-key: ${EXCHANGE_RATE_API_ACCESS_KEY}
