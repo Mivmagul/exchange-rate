@@ -21,7 +21,10 @@ public class ExchangeRateController {
   @Operation(
       summary = "Get exchange rate between two currencies",
       description =
-          "Returns the exchange rate from the specified source currency (from) to the target currency (to).")
+          """
+            Returns the exchange rate from the specified source currency (from)
+            to the target currency (to).
+            """)
   @GetMapping("/rate/{from}/{to}")
   public Number getExchangeRate(@PathVariable String from, @PathVariable String to) {
     validateFromCurrency(from);
@@ -31,7 +34,10 @@ public class ExchangeRateController {
   @Operation(
       summary = "Get all exchange rates for a currency",
       description =
-          "Returns all exchange rates for the specified source currency (from) to all available target currencies.")
+          """
+            Returns all exchange rates for the specified source currency (from)
+            to all available target currencies.
+            """)
   @GetMapping("/rates/{from}")
   public Map<String, Number> getAllExchangeRates(@PathVariable String from) {
     validateFromCurrency(from);
@@ -41,7 +47,10 @@ public class ExchangeRateController {
   @Operation(
       summary = "Convert value between two currencies",
       description =
-          "Converts the specified amount from the source currency (from) to the target currency (to) using the current exchange rate.")
+          """
+            Converts the specified amount from the source currency (from)
+            to the target currency (to) using the current exchange rate.
+            """)
   @GetMapping("/convert/{from}/{to}")
   public Number convertValue(
       @PathVariable String from, @PathVariable String to, @RequestParam Double amount) {
@@ -52,7 +61,11 @@ public class ExchangeRateController {
   @Operation(
       summary = "Convert value to multiple currencies",
       description =
-          "Converts the specified amount from the source currency (from) to multiple target currencies. The list of target currencies is provided as a parameter.")
+          """
+            Converts the specified amount from the source currency (from)
+            to multiple target currencies.
+            The list of target currencies is provided as a parameter.
+            """)
   @GetMapping("/convert/{from}")
   public Map<String, Double> convertToMultipleCurrencies(
       @PathVariable String from,
@@ -66,7 +79,10 @@ public class ExchangeRateController {
     if ("USD".equalsIgnoreCase(from)) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
-          "'USD' cannot be used as the source currency (from). Please choose another currency (e.g. EUR).");
+          """
+              'USD' cannot be used as the source currency (from).
+              Please choose another currency (e.g. EUR).
+              """);
     }
   }
 }
