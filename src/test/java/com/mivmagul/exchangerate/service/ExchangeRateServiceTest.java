@@ -29,10 +29,8 @@ public class ExchangeRateServiceTest {
         );
         when(restTemplate.getForObject(Mockito.anyString(), Mockito.eq(Map.class)))
                 .thenReturn(mockResponse);
-
         // execute
         Number rate = service.getExchangeRate("GBP", "USD");
-
         // verify
         assertEquals(1.2, rate);
     }

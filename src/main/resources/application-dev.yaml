@@ -1,7 +1,6 @@
 server:
   port: 8081
 
-spring:
-  logging:
-    level:
-      com.mivmagul: DEBUG
+logging:
+  level:
+    com.mivmagul: DEBUG

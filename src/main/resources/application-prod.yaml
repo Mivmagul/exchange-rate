@@ -1,7 +1,6 @@
 server:
   port: 8080
 
-spring:
-  logging:
-    level:
-      com.mivmagul: INFO
+logging:
+  level:
+    com.mivmagul: INFO
