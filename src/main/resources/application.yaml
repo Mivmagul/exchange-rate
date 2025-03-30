@@ -9,16 +9,16 @@ spring:
     type: redis
   data:
     redis:
-      host: localhost
+      host: redis
       port: 6379
 
 exchange-rate:
-  default-provider: FIXER_IO
+  default-provider: FIXER_IO # couldn't create API key for api.exchangerate.host, because of server error
   fixer:
     api:
       endpoint: https://data.fixer.io/api/latest
-      access-key: ${FIXER_IO_ACCESS_KEY}
+      access-key: ${FIXER_IO_ACCESS_KEY:a0625efcc893a5d260e119819bd4bf90}
   host:
     api:
       endpoint: https://api.exchangerate.host/live
-      access-key: ${EXCHANGE_RATE_HOST_ACCESS_KEY}
+      access-key: ${EXCHANGE_RATE_HOST_ACCESS_KEY:na}
