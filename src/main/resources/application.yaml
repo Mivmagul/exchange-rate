@@ -13,6 +13,12 @@ spring:
       port: 6379
 
 exchange-rate:
-  api:
-    url: https://data.fixer.io/api/latest
-    access-key: ${EXCHANGE_RATE_API_ACCESS_KEY}
+  default-provider: FIXER_IO
+  fixer:
+    api:
+      endpoint: https://data.fixer.io/api/latest
+      access-key: ${FIXER_IO_ACCESS_KEY}
+  host:
+    api:
+      endpoint: https://api.exchangerate.host/live
+      access-key: ${EXCHANGE_RATE_HOST_ACCESS_KEY}

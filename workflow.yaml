@@ -17,5 +17,6 @@ jobs:
         run: ./mvnw clean package
       - name: Run application
         env:
-          EXCHANGE_RATE_API_ACCESS_KEY: ${{ secrets.FIXER_IO_ACCESS_KEY }}
+          FIXER_IO_ACCESS_KEY: ${{ secrets.FIXER_IO_ACCESS_KEY }}
+          EXCHANGE_RATE_HOST_ACCESS_KEY: ${{ secrets.EXCHANGE_RATE_HOST_ACCESS_KEY }}
         run: java -jar target/exchange-rate-service.jar
