@@ -15,6 +15,9 @@ public class ExchangeRateProviderFactory {
   }
 
   public ExchangeRateProvider getProvider(ExchangeRateProviderType providerType) {
+    if (providerType == null) {
+      throw new IllegalArgumentException("Provider type must not be null");
+    }
     return switch (providerType) {
       case FIXER_IO -> fixerProvider;
       case EXCHANGE_RATE_HOST -> hostProvider;
