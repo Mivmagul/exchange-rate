@@ -28,7 +28,7 @@ public class ExchangeRateController {
   @GetMapping("/rate/{from}/{to}")
   public Number getExchangeRate(@PathVariable String from, @PathVariable String to) {
     validateFromCurrency(from);
-    return exchangeRateService.getExchangeRate(from, to);
+    return exchangeRateService.getExchangeRate(from.toUpperCase(), to.toUpperCase());
   }
 
   @Operation(
@@ -41,7 +41,7 @@ public class ExchangeRateController {
   @GetMapping("/rates/{from}")
   public Map<String, Number> getAllExchangeRates(@PathVariable String from) {
     validateFromCurrency(from);
-    return exchangeRateService.getAllExchangeRates(from);
+    return exchangeRateService.getAllExchangeRates(from.toUpperCase());
   }
 
   @Operation(
@@ -55,7 +55,7 @@ public class ExchangeRateController {
   public Number convertValue(
       @PathVariable String from, @PathVariable String to, @RequestParam Double amount) {
     validateFromCurrency(from);
-    return exchangeRateService.convertValue(from, to, amount);
+    return exchangeRateService.convertValue(from.toUpperCase(), to.toUpperCase(), amount);
   }
 
   @Operation(
@@ -72,7 +72,9 @@ public class ExchangeRateController {
       @RequestParam Double amount,
       @RequestParam List<String> currencies) {
     validateFromCurrency(from);
-    return exchangeRateService.convertToMultipleCurrencies(from, amount, currencies);
+    List<String> currenciesUpperCase = currencies.stream().map(String::toUpperCase).toList();
+    return exchangeRateService.convertToMultipleCurrencies(
+        from.toUpperCase(), amount, currenciesUpperCase);
   }
 
   private void validateFromCurrency(String from) {
