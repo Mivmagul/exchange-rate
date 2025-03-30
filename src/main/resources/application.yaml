@@ -6,7 +6,11 @@ spring:
   profiles:
     active: prod
   cache:
-    type: simple
+    type: redis
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 exchange-rate:
   api:
