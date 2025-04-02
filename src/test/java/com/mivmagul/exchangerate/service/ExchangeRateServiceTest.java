@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import com.mivmagul.exchangerate.data.ExchangeRateProviderType;
 import com.mivmagul.exchangerate.provider.ExchangeRateProvider;
 import com.mivmagul.exchangerate.provider.ExchangeRateProviderFactory;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,10 +65,10 @@ public class ExchangeRateServiceTest {
     when(provider.fetchRates("GBP")).thenReturn(mockResponse);
 
     // execute
-    Number convertedValue = service.convertValue("GBP", "USD", 100.0);
+    Number convertedValue = service.convertValue("GBP", "USD", BigDecimal.valueOf(100));
 
     // verify
-    assertEquals(120.0, convertedValue);
+    assertEquals(0, BigDecimal.valueOf(120).compareTo((BigDecimal) convertedValue));
   }
 
   @Test
@@ -77,11 +78,11 @@ public class ExchangeRateServiceTest {
     when(provider.fetchRates("GBP")).thenReturn(mockResponse);
 
     // execute
-    Map<String, Double> conversions =
-        service.convertToMultipleCurrencies("GBP", 100.0, List.of("USD", "EUR"));
+    Map<String, BigDecimal> conversions =
+        service.convertToMultipleCurrencies("GBP", BigDecimal.valueOf(100), List.of("USD", "EUR"));
 
     // verify
-    assertEquals(120.0, conversions.get("USD"));
-    assertEquals(85.0, conversions.get("EUR"));
+    assertEquals(0, BigDecimal.valueOf(120).compareTo(conversions.get("USD")));
+    assertEquals(0, BigDecimal.valueOf(85).compareTo(conversions.get("EUR")));
   }
 }

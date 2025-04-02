@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.mivmagul.exchangerate.service.ExchangeRateService;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,8 +68,8 @@ public class ExchangeRateControllerTest {
     // setup
     String from = "GBP";
     String to = "USD";
-    Double amount = 100.0;
-    Number mockConvertedValue = 120.0;
+    BigDecimal amount = BigDecimal.valueOf(100);
+    Number mockConvertedValue = 120;
 
     when(exchangeRateService.convertValue(from, to, amount)).thenReturn(mockConvertedValue);
 
@@ -84,9 +85,10 @@ public class ExchangeRateControllerTest {
   public void testConvertToMultipleCurrencies() throws Exception {
     // setup
     String from = "GBP";
-    Double amount = 100.0;
+    BigDecimal amount = BigDecimal.valueOf(100);
     List<String> currencies = List.of("USD", "EUR");
-    Map<String, Double> mockConversions = Map.of("USD", 120.0, "EUR", 85.0);
+    Map<String, BigDecimal> mockConversions =
+        Map.of("USD", BigDecimal.valueOf(120), "EUR", BigDecimal.valueOf(85));
 
     when(exchangeRateService.convertToMultipleCurrencies(from, amount, currencies))
         .thenReturn(mockConversions);
@@ -98,8 +100,8 @@ public class ExchangeRateControllerTest {
                 .param("amount", amount.toString())
                 .param("currencies", "USD", "EUR"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.USD").value(120.0))
-        .andExpect(jsonPath("$.EUR").value(85.0));
+        .andExpect(jsonPath("$.USD").value(120))
+        .andExpect(jsonPath("$.EUR").value(85));
   }
 
   @Test

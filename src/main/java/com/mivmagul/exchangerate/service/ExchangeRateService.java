@@ -3,6 +3,7 @@ package com.mivmagul.exchangerate.service;
 import com.mivmagul.exchangerate.data.ExchangeRateProviderType;
 import com.mivmagul.exchangerate.provider.ExchangeRateProvider;
 import com.mivmagul.exchangerate.provider.ExchangeRateProviderFactory;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,17 +32,18 @@ public class ExchangeRateService {
     return (Map<String, Number>) response.get("rates");
   }
 
-  public Number convertValue(String from, String to, Double amount) {
+  public Number convertValue(String from, String to, BigDecimal amount) {
     Number rate = getExchangeRate(from, to);
-    return rate.doubleValue() * amount;
+    return amount.multiply(BigDecimal.valueOf(rate.doubleValue()));
   }
 
-  public Map<String, Double> convertToMultipleCurrencies(
-      String from, Double amount, List<String> currencies) {
+  public Map<String, BigDecimal> convertToMultipleCurrencies(
+      String from, BigDecimal amount, List<String> currencies) {
     Map<String, Number> rates = getAllExchangeRates(from);
-    Map<String, Double> conversions = new HashMap<>();
+    Map<String, BigDecimal> conversions = new HashMap<>();
     for (String currency : currencies) {
-      conversions.put(currency, rates.get(currency).doubleValue() * amount);
+      conversions.put(
+          currency, BigDecimal.valueOf(rates.get(currency).doubleValue()).multiply(amount));
     }
     return conversions;
   }
