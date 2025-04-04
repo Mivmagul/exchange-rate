@@ -1,50 +1,86 @@
 package com.mivmagul.exchangerate.service;
 
-import com.mivmagul.exchangerate.data.ExchangeRateProviderType;
 import com.mivmagul.exchangerate.provider.ExchangeRateProvider;
-import com.mivmagul.exchangerate.provider.ExchangeRateProviderFactory;
 import java.math.BigDecimal;
-import java.util.HashMap;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ExchangeRateService {
+  private static final Logger logger = LoggerFactory.getLogger(ExchangeRateService.class);
 
-  private final ExchangeRateProvider defaultProvider;
+  private final String baseCurrency;
+  private final int precisionScale;
+  private final List<ExchangeRateProvider> providers;
 
   public ExchangeRateService(
-      ExchangeRateProviderFactory providerFactory,
-      @Value("${exchange-rate.default-provider}") ExchangeRateProviderType defaultProviderType) {
-    this.defaultProvider = providerFactory.getProvider(defaultProviderType);
+      List<ExchangeRateProvider> providers,
+      @Value("${exchange-rate.base-currency}") String baseCurrency,
+      @Value("${exchange-rate.precision-scale}") int precisionScale) {
+    this.providers = providers;
+    this.baseCurrency = baseCurrency;
+    this.precisionScale = precisionScale;
   }
 
-  public Number getExchangeRate(String from, String to) {
-    Map<String, Object> response = defaultProvider.fetchRates(from);
-    Map<String, Number> rates = (Map<String, Number>) response.get("rates");
-    return rates.get(to);
+  public Map<String, BigDecimal> fetchRatesForBaseCurrency(String baseCurrency) {
+    if (baseCurrency == null) {
+      throw new IllegalArgumentException("Base currency cannot be null");
+    }
+
+    for (ExchangeRateProvider provider : providers) {
+      try {
+        Map<String, Object> response = provider.fetchRates(baseCurrency);
+        return ((Map<String, Number>) response.get("rates"))
+            .entrySet().stream()
+                .collect(
+                    Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> BigDecimal.valueOf(entry.getValue().doubleValue())));
+      } catch (Exception exception) {
+        logger.error(
+            "Provider {} failed with: {}",
+            provider.getClass().getSimpleName(),
+            exception.getMessage());
+      }
+    }
+    throw new RuntimeException("All providers failed to fetch exchange rates.");
   }
 
-  public Map<String, Number> getAllExchangeRates(String from) {
-    Map<String, Object> response = defaultProvider.fetchRates(from);
-    return (Map<String, Number>) response.get("rates");
+  public BigDecimal getExchangeRate(String currencyFrom, String currencyTo) {
+    Map<String, BigDecimal> baseRates = fetchRatesForBaseCurrency(baseCurrency);
+
+    if (baseCurrency.equalsIgnoreCase(currencyFrom)) {
+      return baseRates.get(currencyTo);
+    } else if (baseCurrency.equalsIgnoreCase(currencyTo)) {
+      return BigDecimal.ONE.divide(
+          baseRates.get(currencyFrom), precisionScale, RoundingMode.HALF_UP);
+    } else {
+      BigDecimal rateTo = baseRates.get(currencyTo);
+      BigDecimal rateFrom = baseRates.get(currencyFrom);
+      return rateTo.divide(rateFrom, precisionScale, RoundingMode.HALF_UP);
+    }
   }
 
-  public Number convertValue(String from, String to, BigDecimal amount) {
-    Number rate = getExchangeRate(from, to);
-    return amount.multiply(BigDecimal.valueOf(rate.doubleValue()));
+  public Map<String, BigDecimal> getAllExchangeRates(String baseCurrency) {
+    return fetchRatesForBaseCurrency(baseCurrency);
+  }
+
+  public BigDecimal convertValue(String currencyFrom, String currencyTo, BigDecimal amount) {
+    BigDecimal exchangeRate = getExchangeRate(currencyFrom, currencyTo);
+    return amount.multiply(exchangeRate);
   }
 
   public Map<String, BigDecimal> convertToMultipleCurrencies(
-      String from, BigDecimal amount, List<String> currencies) {
-    Map<String, Number> rates = getAllExchangeRates(from);
-    Map<String, BigDecimal> conversions = new HashMap<>();
-    for (String currency : currencies) {
-      conversions.put(
-          currency, BigDecimal.valueOf(rates.get(currency).doubleValue()).multiply(amount));
-    }
-    return conversions;
+      String currencyFrom, BigDecimal amount, List<String> currencies) {
+    return currencies.stream()
+        .collect(
+            Collectors.toMap(
+                currency -> currency, currency -> convertValue(currencyFrom, currency, amount)));
   }
 }

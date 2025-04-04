@@ -3,12 +3,10 @@ package com.mivmagul.exchangerate.provider;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -19,12 +17,13 @@ public class FixerExchangeRateProviderTest {
 
   @Mock private RestTemplate restTemplate;
 
-  @InjectMocks private FixerExchangeRateProvider provider;
+  private FixerExchangeRateProvider provider;
 
   @BeforeEach
-  public void setup() throws Exception {
-    setField(provider, "endpoint", "https://data.fixer.io/api/latest");
-    setField(provider, "accessKey", "test-access-key");
+  public void setup() {
+    provider =
+        new FixerExchangeRateProvider(
+            restTemplate, "https://data.fixer.io/api/latest", "test-access-key");
   }
 
   @Test
@@ -42,11 +41,5 @@ public class FixerExchangeRateProviderTest {
 
     // verify
     assertEquals(mockResponse, response);
-  }
-
-  private void setField(Object target, String fieldName, Object value) throws Exception {
-    Field field = target.getClass().getDeclaredField(fieldName);
-    field.setAccessible(true);
-    field.set(target, value);
   }
 }

@@ -36,7 +36,7 @@ public class ExchangeRateControllerTest {
     // setup
     String from = "GBP";
     String to = "USD";
-    Number mockRate = 1.2;
+    BigDecimal mockRate = BigDecimal.valueOf(1.2);
 
     when(exchangeRateService.getExchangeRate(from, to)).thenReturn(mockRate);
 
@@ -51,7 +51,8 @@ public class ExchangeRateControllerTest {
   public void testGetAllExchangeRates() throws Exception {
     // setup
     String from = "GBP";
-    Map<String, Number> mockRates = Map.of("USD", 1.2, "EUR", 0.85);
+    Map<String, BigDecimal> mockRates =
+        Map.of("USD", BigDecimal.valueOf(1.2), "EUR", BigDecimal.valueOf(0.85));
 
     when(exchangeRateService.getAllExchangeRates(from)).thenReturn(mockRates);
 
@@ -69,7 +70,7 @@ public class ExchangeRateControllerTest {
     String from = "GBP";
     String to = "USD";
     BigDecimal amount = BigDecimal.valueOf(100);
-    Number mockConvertedValue = 120;
+    BigDecimal mockConvertedValue = BigDecimal.valueOf(120);
 
     when(exchangeRateService.convertValue(from, to, amount)).thenReturn(mockConvertedValue);
 
