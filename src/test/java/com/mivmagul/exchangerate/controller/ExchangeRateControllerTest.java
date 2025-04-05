@@ -77,7 +77,8 @@ public class ExchangeRateControllerTest {
     // execute & verify
     mockMvc
         .perform(
-            get("/api/exchange-rates/{from}/{to}/conversion", from, to).param("amount", amount.toString()))
+            get("/api/exchange-rates/{from}/{to}/conversion", from, to)
+                .param("amount", amount.toString()))
         .andExpect(status().isOk())
         .andExpect(content().string(mockConvertedValue.toString()));
   }

@@ -15,11 +15,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class ExchangeRateServiceTest {
-
   @Mock private ExchangeRateProvider fixerIoProvider;
-
   @Mock private ExchangeRateProvider exchangeRateHostProvider;
-
+  @Mock private ExchangeRateRetryService retryService;
   private ExchangeRateService service;
 
   @BeforeEach
@@ -30,35 +28,31 @@ public class ExchangeRateServiceTest {
     lenient().when(fixerIoProvider.fetchRates("GBP")).thenReturn(fixerIoRates);
     lenient().when(exchangeRateHostProvider.fetchRates("GBP")).thenReturn(exchangeRateHostRates);
 
-    service = new ExchangeRateService(List.of(fixerIoProvider, exchangeRateHostProvider), "GBP", 2);
+    service = new ExchangeRateService(retryService, "GBP", 2);
   }
 
   @Test
   public void testFetchRatesForBaseCurrency() {
+    // setup
+    Map<String, BigDecimal> rates =
+        Map.of("USD", BigDecimal.valueOf(1.2), "EUR", BigDecimal.valueOf(0.85));
+    when(retryService.fetchRatesForBaseCurrency("GBP")).thenReturn(rates);
+
     // execute
-    Map<String, BigDecimal> rates = service.fetchRatesForBaseCurrency("GBP");
+    Map<String, BigDecimal> result = service.getAllExchangeRates("GBP");
 
     // verify
-    assertEquals(BigDecimal.valueOf(1.2), rates.get("USD"));
-    assertEquals(BigDecimal.valueOf(0.85), rates.get("EUR"));
-  }
-
-  @Test
-  public void testFetchRatesForBaseCurrencyWithNull() {
-    // execute
-    IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> {
-              service.fetchRatesForBaseCurrency(null);
-            });
-
-    // verify
-    assertEquals("Base currency cannot be null", exception.getMessage());
+    assertEquals(BigDecimal.valueOf(1.2), result.get("USD"));
+    assertEquals(BigDecimal.valueOf(0.85), result.get("EUR"));
   }
 
   @Test
   public void testGetExchangeRate() {
+    // setup
+    Map<String, BigDecimal> rates =
+        Map.of("USD", BigDecimal.valueOf(1.2), "EUR", BigDecimal.valueOf(0.85));
+    when(retryService.fetchRatesForBaseCurrency("GBP")).thenReturn(rates);
+
     // execute
     BigDecimal rate = service.getExchangeRate("GBP", "USD");
 
@@ -68,16 +62,26 @@ public class ExchangeRateServiceTest {
 
   @Test
   public void testGetAllExchangeRates() {
+    // setup
+    Map<String, BigDecimal> rates =
+        Map.of("USD", BigDecimal.valueOf(1.2), "EUR", BigDecimal.valueOf(0.85));
+    when(retryService.fetchRatesForBaseCurrency("GBP")).thenReturn(rates);
+
     // execute
-    Map<String, BigDecimal> rates = service.getAllExchangeRates("GBP");
+    Map<String, BigDecimal> result = service.getAllExchangeRates("GBP");
 
     // verify
-    assertEquals(BigDecimal.valueOf(1.2), rates.get("USD"));
-    assertEquals(BigDecimal.valueOf(0.85), rates.get("EUR"));
+    assertEquals(BigDecimal.valueOf(1.2), result.get("USD"));
+    assertEquals(BigDecimal.valueOf(0.85), result.get("EUR"));
   }
 
   @Test
   public void testConvertValue() {
+    // setup
+    Map<String, BigDecimal> rates =
+        Map.of("USD", BigDecimal.valueOf(1.2), "EUR", BigDecimal.valueOf(0.85));
+    when(retryService.fetchRatesForBaseCurrency("GBP")).thenReturn(rates);
+
     // execute
     BigDecimal convertedValue = service.convertValue("GBP", "USD", BigDecimal.valueOf(100));
 
@@ -87,6 +91,11 @@ public class ExchangeRateServiceTest {
 
   @Test
   public void testConvertToMultipleCurrencies() {
+    // setup
+    Map<String, BigDecimal> rates =
+        Map.of("USD", BigDecimal.valueOf(1.2), "EUR", BigDecimal.valueOf(0.85));
+    when(retryService.fetchRatesForBaseCurrency("GBP")).thenReturn(rates);
+
     // execute
     Map<String, BigDecimal> conversions =
         service.convertToMultipleCurrencies("GBP", BigDecimal.valueOf(100), List.of("USD", "EUR"));
@@ -94,37 +103,5 @@ public class ExchangeRateServiceTest {
     // verify
     assertEquals(0, BigDecimal.valueOf(120).compareTo(conversions.get("USD")));
     assertEquals(0, BigDecimal.valueOf(85).compareTo(conversions.get("EUR")));
-  }
-
-  @Test
-  public void testFallbackToSecondProvider() {
-    // setup
-    when(fixerIoProvider.fetchRates("GBP")).thenThrow(new RuntimeException("Provider failed"));
-
-    // execute
-    Map<String, BigDecimal> rates = service.fetchRatesForBaseCurrency("GBP");
-
-    // verify
-    assertEquals(BigDecimal.valueOf(1.3), rates.get("USD"));
-    assertEquals(BigDecimal.valueOf(0.87), rates.get("EUR"));
-  }
-
-  @Test
-  public void testAllProvidersFail() {
-    // setup
-    when(fixerIoProvider.fetchRates("GBP")).thenThrow(new RuntimeException("Fixer IO failed"));
-    when(exchangeRateHostProvider.fetchRates("GBP"))
-        .thenThrow(new RuntimeException("Exchange Rate Host failed"));
-
-    // execute
-    RuntimeException exception =
-        assertThrows(
-            RuntimeException.class,
-            () -> {
-              service.fetchRatesForBaseCurrency("GBP");
-            });
-
-    // verify
-    assertEquals("All providers failed to fetch exchange rates.", exception.getMessage());
   }
 }
