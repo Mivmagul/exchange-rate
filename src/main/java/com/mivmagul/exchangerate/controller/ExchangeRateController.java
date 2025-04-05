@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/exchange")
+@RequestMapping("/api/exchange-rates")
 public class ExchangeRateController {
 
   private final ExchangeRateService exchangeRateService;
@@ -26,7 +26,7 @@ public class ExchangeRateController {
             Returns the exchange rate from the specified source currency (from)
             to the target currency (currencyTo).
             """)
-  @GetMapping("/rate/{currencyFrom}/{currencyTo}")
+  @GetMapping("/{currencyFrom}/{currencyTo}")
   public BigDecimal getExchangeRate(
       @PathVariable String currencyFrom, @PathVariable String currencyTo) {
     validateFromCurrency(currencyFrom);
@@ -41,7 +41,7 @@ public class ExchangeRateController {
             Returns all exchange rates for the specified source currency (currencyFrom)
             to all available target currencies.
             """)
-  @GetMapping("/rates/{currencyFrom}")
+  @GetMapping("/{currencyFrom}")
   public Map<String, BigDecimal> getAllExchangeRates(@PathVariable String currencyFrom) {
     validateFromCurrency(currencyFrom);
     return exchangeRateService.getAllExchangeRates(currencyFrom.toUpperCase());
@@ -54,7 +54,7 @@ public class ExchangeRateController {
             Converts the specified amount from the source currency (currencyFrom)
             to the target currency (currencyTo) using the current exchange rate.
             """)
-  @GetMapping("/convert/{currencyFrom}/{currencyTo}")
+  @GetMapping("/{currencyFrom}/{currencyTo}/conversion")
   public BigDecimal convertValue(
       @PathVariable String currencyFrom,
       @PathVariable String currencyTo,
@@ -72,7 +72,7 @@ public class ExchangeRateController {
             to multiple target currencies.
             The list of target currencies is provided as a parameter.
             """)
-  @GetMapping("/convert/{currencyFrom}")
+  @GetMapping("/{currencyFrom}/conversion")
   public Map<String, BigDecimal> convertToMultipleCurrencies(
       @PathVariable String currencyFrom,
       @RequestParam BigDecimal amount,
