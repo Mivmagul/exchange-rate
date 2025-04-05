@@ -42,7 +42,7 @@ public class ExchangeRateControllerTest {
 
     // execute & verify
     mockMvc
-        .perform(get("/api/exchange/rate/{from}/{to}", from, to))
+        .perform(get("/api/exchange-rates/{from}/{to}", from, to))
         .andExpect(status().isOk())
         .andExpect(content().string(mockRate.toString()));
   }
@@ -58,7 +58,7 @@ public class ExchangeRateControllerTest {
 
     // execute & verify
     mockMvc
-        .perform(get("/api/exchange/rates/{from}", from))
+        .perform(get("/api/exchange-rates/{from}", from))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.USD").value(1.2))
         .andExpect(jsonPath("$.EUR").value(0.85));
@@ -77,7 +77,7 @@ public class ExchangeRateControllerTest {
     // execute & verify
     mockMvc
         .perform(
-            get("/api/exchange/convert/{from}/{to}", from, to).param("amount", amount.toString()))
+            get("/api/exchange-rates/{from}/{to}/conversion", from, to).param("amount", amount.toString()))
         .andExpect(status().isOk())
         .andExpect(content().string(mockConvertedValue.toString()));
   }
@@ -97,7 +97,7 @@ public class ExchangeRateControllerTest {
     // execute & verify
     mockMvc
         .perform(
-            get("/api/exchange/convert/{from}", from)
+            get("/api/exchange-rates/{from}/conversion", from)
                 .param("amount", amount.toString())
                 .param("currencies", "USD", "EUR"))
         .andExpect(status().isOk())
@@ -109,7 +109,7 @@ public class ExchangeRateControllerTest {
   public void testValidateFromCurrency() throws Exception {
     // execute & verify
     mockMvc
-        .perform(get("/api/exchange/rate/{from}/{to}", "USD", "EUR"))
+        .perform(get("/api/exchange-rates/{from}/{to}", "USD", "EUR"))
         .andExpect(status().isBadRequest());
   }
 }
