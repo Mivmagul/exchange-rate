@@ -1,9 +1,10 @@
 package com.mivmagul.exchangerate.service;
 
+import com.mivmagul.exchangerate.dto.CurrencyRate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -24,20 +25,30 @@ public class ExchangeRateService {
   }
 
   public BigDecimal getExchangeRate(String currencyFrom, String currencyTo) {
-    Map<String, BigDecimal> baseRates = retryService.fetchRatesForBaseCurrency(baseCurrency);
+    Set<CurrencyRate> baseRates = retryService.fetchRatesForBaseCurrency(baseCurrency);
+
+    BigDecimal rateTo = findRate(baseRates, currencyTo);
+    BigDecimal rateFrom = findRate(baseRates, currencyFrom);
+
     if (baseCurrency.equalsIgnoreCase(currencyFrom)) {
-      return baseRates.get(currencyTo);
+      return rateTo;
     } else if (baseCurrency.equalsIgnoreCase(currencyTo)) {
-      return BigDecimal.ONE.divide(
-          baseRates.get(currencyFrom), precisionScale, RoundingMode.HALF_UP);
+      return BigDecimal.ONE.divide(rateFrom, precisionScale, RoundingMode.HALF_UP);
     } else {
-      BigDecimal rateTo = baseRates.get(currencyTo);
-      BigDecimal rateFrom = baseRates.get(currencyFrom);
       return rateTo.divide(rateFrom, precisionScale, RoundingMode.HALF_UP);
     }
   }
 
-  public Map<String, BigDecimal> getAllExchangeRates(String baseCurrency) {
+  private BigDecimal findRate(Set<CurrencyRate> baseRates, String currency) {
+    for (CurrencyRate rate : baseRates) {
+      if (rate.getCurrencyCode().equalsIgnoreCase(currency)) {
+        return rate.getRate();
+      }
+    }
+    throw new RuntimeException("Rate not found for currency: " + currency);
+  }
+
+  public Set<CurrencyRate> getAllExchangeRates(String baseCurrency) {
     return retryService.fetchRatesForBaseCurrency(baseCurrency);
   }
 
@@ -46,11 +57,10 @@ public class ExchangeRateService {
     return amount.multiply(exchangeRate);
   }
 
-  public Map<String, BigDecimal> convertToMultipleCurrencies(
+  public Set<CurrencyRate> convertToMultipleCurrencies(
       String currencyFrom, BigDecimal amount, List<String> currencies) {
     return currencies.stream()
-        .collect(
-            Collectors.toMap(
-                currency -> currency, currency -> convertValue(currencyFrom, currency, amount)));
+        .map(currency -> new CurrencyRate(currency, convertValue(currencyFrom, currency, amount)))
+        .collect(Collectors.toSet());
   }
 }

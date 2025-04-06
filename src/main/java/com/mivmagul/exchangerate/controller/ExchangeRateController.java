@@ -1,10 +1,11 @@
 package com.mivmagul.exchangerate.controller;
 
+import com.mivmagul.exchangerate.dto.CurrencyRate;
 import com.mivmagul.exchangerate.service.ExchangeRateService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -42,7 +43,7 @@ public class ExchangeRateController {
             to all available target currencies.
             """)
   @GetMapping("/{currencyFrom}")
-  public Map<String, BigDecimal> getAllExchangeRates(@PathVariable String currencyFrom) {
+  public Set<CurrencyRate> getAllExchangeRates(@PathVariable String currencyFrom) {
     validateFromCurrency(currencyFrom);
     return exchangeRateService.getAllExchangeRates(currencyFrom.toUpperCase());
   }
@@ -73,7 +74,7 @@ public class ExchangeRateController {
             The list of target currencies is provided as a parameter.
             """)
   @GetMapping("/{currencyFrom}/conversion")
-  public Map<String, BigDecimal> convertToMultipleCurrencies(
+  public Set<CurrencyRate> convertToMultipleCurrencies(
       @PathVariable String currencyFrom,
       @RequestParam BigDecimal amount,
       @RequestParam List<String> currencies) {

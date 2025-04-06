@@ -3,10 +3,11 @@ package com.mivmagul.exchangerate.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.mivmagul.exchangerate.dto.CurrencyRate;
 import com.mivmagul.exchangerate.provider.ExchangeRateProvider;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +21,9 @@ import org.springframework.retry.annotation.EnableRetry;
 public class ExchangeRateRetryServiceTest {
 
   @Mock private ExchangeRateProvider fixerIoProvider;
+
   @Mock private ExchangeRateProvider exchangeRateHostProvider;
+
   private ExchangeRateRetryService retryService;
 
   @BeforeEach
@@ -36,16 +39,32 @@ public class ExchangeRateRetryServiceTest {
   public void testFetchRatesWithRetry() {
     // setup
     when(fixerIoProvider.fetchRates("GBP")).thenThrow(new RuntimeException("Fixer IO failed"));
+
+    Set<CurrencyRate> mockRates =
+        Set.of(
+            new CurrencyRate("USD", BigDecimal.valueOf(1.3)),
+            new CurrencyRate("EUR", BigDecimal.valueOf(0.87)));
     when(exchangeRateHostProvider.fetchRates("GBP"))
         .thenThrow(new RuntimeException("Exchange Rate Host failed"))
-        .thenReturn(Map.of("rates", Map.of("USD", 1.3, "EUR", 0.87)));
+        .thenReturn(mockRates);
 
     // execute
-    Map<String, BigDecimal> rates = retryService.fetchRatesForBaseCurrency("GBP");
+    Set<CurrencyRate> response = retryService.fetchRatesForBaseCurrency("GBP");
 
     // verify
-    assertEquals(BigDecimal.valueOf(1.3), rates.get("USD"));
-    assertEquals(BigDecimal.valueOf(0.87), rates.get("EUR"));
+    assertEquals(2, response.size());
+    assertTrue(
+        response.stream()
+            .anyMatch(
+                rate ->
+                    rate.getCurrencyCode().equals("USD")
+                        && rate.getRate().compareTo(BigDecimal.valueOf(1.3)) == 0));
+    assertTrue(
+        response.stream()
+            .anyMatch(
+                rate ->
+                    rate.getCurrencyCode().equals("EUR")
+                        && rate.getRate().compareTo(BigDecimal.valueOf(0.87)) == 0));
 
     verify(fixerIoProvider, times(2)).fetchRates("GBP");
     verify(exchangeRateHostProvider, times(2)).fetchRates("GBP");
@@ -55,36 +74,32 @@ public class ExchangeRateRetryServiceTest {
   public void testFallbackToSecondProviderWithinOneAttempt() {
     // setup
     when(fixerIoProvider.fetchRates("GBP")).thenThrow(new RuntimeException("Fixer IO failed"));
-    when(exchangeRateHostProvider.fetchRates("GBP"))
-        .thenReturn(Map.of("rates", Map.of("USD", 1.3, "EUR", 0.87)));
+
+    Set<CurrencyRate> mockRates =
+        Set.of(
+            new CurrencyRate("USD", BigDecimal.valueOf(1.3)),
+            new CurrencyRate("EUR", BigDecimal.valueOf(0.87)));
+    when(exchangeRateHostProvider.fetchRates("GBP")).thenReturn(mockRates);
 
     // execute
-    Map<String, BigDecimal> rates = retryService.fetchRatesForBaseCurrency("GBP");
+    Set<CurrencyRate> response = retryService.fetchRatesForBaseCurrency("GBP");
 
     // verify
-    assertEquals(BigDecimal.valueOf(1.3), rates.get("USD"));
-    assertEquals(BigDecimal.valueOf(0.87), rates.get("EUR"));
+    assertEquals(2, response.size());
+    assertTrue(
+        response.stream()
+            .anyMatch(
+                rate ->
+                    rate.getCurrencyCode().equals("USD")
+                        && rate.getRate().compareTo(BigDecimal.valueOf(1.3)) == 0));
+    assertTrue(
+        response.stream()
+            .anyMatch(
+                rate ->
+                    rate.getCurrencyCode().equals("EUR")
+                        && rate.getRate().compareTo(BigDecimal.valueOf(0.87)) == 0));
 
-    verify(fixerIoProvider, times(1)).fetchRates("GBP");
-    verify(exchangeRateHostProvider, times(1)).fetchRates("GBP");
-  }
-
-  @Test
-  public void testProviderReturnsInvalidData() {
-    // setup
-    when(fixerIoProvider.fetchRates("GBP"))
-        .thenReturn(Map.of("invalidKey", Map.of("USD", 1.2, "EUR", 0.85)));
-    when(exchangeRateHostProvider.fetchRates("GBP"))
-        .thenReturn(Map.of("rates", Map.of("USD", 1.3, "EUR", 0.87)));
-
-    // execute
-    Map<String, BigDecimal> rates = retryService.fetchRatesForBaseCurrency("GBP");
-
-    // verify
-    assertEquals(BigDecimal.valueOf(1.3), rates.get("USD"));
-    assertEquals(BigDecimal.valueOf(0.87), rates.get("EUR"));
-
-    verify(fixerIoProvider, times(1)).fetchRates("GBP");
-    verify(exchangeRateHostProvider, times(1)).fetchRates("GBP");
+    verify(fixerIoProvider).fetchRates("GBP");
+    verify(exchangeRateHostProvider).fetchRates("GBP");
   }
 }

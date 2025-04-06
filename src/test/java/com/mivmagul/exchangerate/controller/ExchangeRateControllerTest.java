@@ -4,10 +4,11 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.mivmagul.exchangerate.dto.CurrencyRate;
 import com.mivmagul.exchangerate.service.ExchangeRateService;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,8 +52,10 @@ public class ExchangeRateControllerTest {
   public void testGetAllExchangeRates() throws Exception {
     // setup
     String from = "GBP";
-    Map<String, BigDecimal> mockRates =
-        Map.of("USD", BigDecimal.valueOf(1.2), "EUR", BigDecimal.valueOf(0.85));
+    Set<CurrencyRate> mockRates =
+        Set.of(
+            new CurrencyRate("USD", BigDecimal.valueOf(1.2)),
+            new CurrencyRate("EUR", BigDecimal.valueOf(0.85)));
 
     when(exchangeRateService.getAllExchangeRates(from)).thenReturn(mockRates);
 
@@ -60,8 +63,8 @@ public class ExchangeRateControllerTest {
     mockMvc
         .perform(get("/api/exchange-rates/{from}", from))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.USD").value(1.2))
-        .andExpect(jsonPath("$.EUR").value(0.85));
+        .andExpect(jsonPath("$[?(@.currencyCode == 'USD')].rate").value(1.2))
+        .andExpect(jsonPath("$[?(@.currencyCode == 'EUR')].rate").value(0.85));
   }
 
   @Test
@@ -89,8 +92,10 @@ public class ExchangeRateControllerTest {
     String from = "GBP";
     BigDecimal amount = BigDecimal.valueOf(100);
     List<String> currencies = List.of("USD", "EUR");
-    Map<String, BigDecimal> mockConversions =
-        Map.of("USD", BigDecimal.valueOf(120), "EUR", BigDecimal.valueOf(85));
+    Set<CurrencyRate> mockConversions =
+        Set.of(
+            new CurrencyRate("USD", BigDecimal.valueOf(120)),
+            new CurrencyRate("EUR", BigDecimal.valueOf(85)));
 
     when(exchangeRateService.convertToMultipleCurrencies(from, amount, currencies))
         .thenReturn(mockConversions);
@@ -102,8 +107,8 @@ public class ExchangeRateControllerTest {
                 .param("amount", amount.toString())
                 .param("currencies", "USD", "EUR"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.USD").value(120))
-        .andExpect(jsonPath("$.EUR").value(85));
+        .andExpect(jsonPath("$[?(@.currencyCode == 'USD')].rate").value(120))
+        .andExpect(jsonPath("$[?(@.currencyCode == 'EUR')].rate").value(85));
   }
 
   @Test

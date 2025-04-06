@@ -1,14 +1,15 @@
 package com.mivmagul.exchangerate.provider;
 
-import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.mivmagul.exchangerate.dto.CurrencyRate;
+import com.mivmagul.exchangerate.dto.ExchangeRateResponse;
+import java.util.Set;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.client.RestTemplate;
 
+@Slf4j
 public abstract class AbstractExchangeRateProvider implements ExchangeRateProvider {
-  private static final Logger logger = LoggerFactory.getLogger(AbstractExchangeRateProvider.class);
-
   protected final RestTemplate restTemplate;
   protected final String endpoint;
   protected final String accessKey;
@@ -22,14 +23,25 @@ public abstract class AbstractExchangeRateProvider implements ExchangeRateProvid
 
   @Cacheable(value = "exchangeRates", key = "#source")
   @Override
-  public Map<String, Object> fetchRates(String source) {
-    logger.debug(
+  public Set<CurrencyRate> fetchRates(String source) {
+    log.debug(
         "Fetching exchange rates from {} for currency: {}", getClass().getSimpleName(), source);
+
     String url = buildUrl(source);
+
     try {
-      return restTemplate.getForObject(url, Map.class);
+      ExchangeRateResponse response = restTemplate.getForObject(url, ExchangeRateResponse.class);
+      if (response == null
+          || response.getBaseCurrency() == null
+          || response.getRates() == null
+          || response.getRates().isEmpty()) {
+        throw new RuntimeException("Invalid response from " + getClass().getSimpleName());
+      }
+      return response.getRates().entrySet().stream()
+          .map(entry -> new CurrencyRate(entry.getKey(), entry.getValue()))
+          .collect(Collectors.toSet());
     } catch (Exception exception) {
-      logger.error("Failed to fetch rates from {}", getClass().getSimpleName(), exception);
+      log.error("Failed to fetch rates from {}", getClass().getSimpleName(), exception);
       throw new RuntimeException(getClass().getSimpleName() + " provider failed", exception);
     }
   }

@@ -1,5 +1,6 @@
 package com.mivmagul.exchangerate.config;
 
+import com.mivmagul.exchangerate.data.ExchangeRateProviderType;
 import com.mivmagul.exchangerate.provider.ExchangeRateProvider;
 import com.mivmagul.exchangerate.provider.FixerExchangeRateProvider;
 import com.mivmagul.exchangerate.provider.HostExchangeRateProvider;
@@ -32,7 +33,7 @@ public class AppConfig {
   private String hostAccessKey;
 
   @Value("${exchange-rate.provider-priorities}")
-  private List<String> providerPriorities;
+  private List<ExchangeRateProviderType> providerPriorities;
 
   @Bean
   public RestTemplate restTemplate() {
@@ -57,10 +58,8 @@ public class AppConfig {
         .map(
             priority ->
                 switch (priority) {
-                  case "FIXER_IO" -> fixerExchangeRateProvider;
-                  case "EXCHANGE_RATE_HOST" -> hostExchangeRateProvider;
-                  default ->
-                      throw new IllegalArgumentException("Unknown provider type: " + priority);
+                  case FIXER_IO -> fixerExchangeRateProvider;
+                  case EXCHANGE_RATE_HOST -> hostExchangeRateProvider;
                 })
         .collect(Collectors.toList());
   }
