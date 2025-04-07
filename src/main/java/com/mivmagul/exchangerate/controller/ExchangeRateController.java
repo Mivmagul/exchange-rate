@@ -1,15 +1,17 @@
 package com.mivmagul.exchangerate.controller;
 
+import com.mivmagul.exchangerate.dto.CurrencyRate;
 import com.mivmagul.exchangerate.service.ExchangeRateService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/exchange")
+@RequestMapping("/api/exchange-rates")
 public class ExchangeRateController {
 
   private final ExchangeRateService exchangeRateService;
@@ -23,66 +25,71 @@ public class ExchangeRateController {
       description =
           """
             Returns the exchange rate from the specified source currency (from)
-            to the target currency (to).
+            to the target currency (currencyTo).
             """)
-  @GetMapping("/rate/{from}/{to}")
-  public Number getExchangeRate(@PathVariable String from, @PathVariable String to) {
-    validateFromCurrency(from);
-    return exchangeRateService.getExchangeRate(from.toUpperCase(), to.toUpperCase());
+  @GetMapping("/{currencyFrom}/{currencyTo}")
+  public BigDecimal getExchangeRate(
+      @PathVariable String currencyFrom, @PathVariable String currencyTo) {
+    validateFromCurrency(currencyFrom);
+    return exchangeRateService.getExchangeRate(
+        currencyFrom.toUpperCase(), currencyTo.toUpperCase());
   }
 
   @Operation(
       summary = "Get all exchange rates for a currency",
       description =
           """
-            Returns all exchange rates for the specified source currency (from)
+            Returns all exchange rates for the specified source currency (currencyFrom)
             to all available target currencies.
             """)
-  @GetMapping("/rates/{from}")
-  public Map<String, Number> getAllExchangeRates(@PathVariable String from) {
-    validateFromCurrency(from);
-    return exchangeRateService.getAllExchangeRates(from.toUpperCase());
+  @GetMapping("/{currencyFrom}")
+  public Set<CurrencyRate> getAllExchangeRates(@PathVariable String currencyFrom) {
+    validateFromCurrency(currencyFrom);
+    return exchangeRateService.getAllExchangeRates(currencyFrom.toUpperCase());
   }
 
   @Operation(
       summary = "Convert value between two currencies",
       description =
           """
-            Converts the specified amount from the source currency (from)
-            to the target currency (to) using the current exchange rate.
+            Converts the specified amount from the source currency (currencyFrom)
+            to the target currency (currencyTo) using the current exchange rate.
             """)
-  @GetMapping("/convert/{from}/{to}")
-  public Number convertValue(
-      @PathVariable String from, @PathVariable String to, @RequestParam Double amount) {
-    validateFromCurrency(from);
-    return exchangeRateService.convertValue(from.toUpperCase(), to.toUpperCase(), amount);
+  @GetMapping("/{currencyFrom}/{currencyTo}/conversion")
+  public BigDecimal convertValue(
+      @PathVariable String currencyFrom,
+      @PathVariable String currencyTo,
+      @RequestParam BigDecimal amount) {
+    validateFromCurrency(currencyFrom);
+    return exchangeRateService.convertValue(
+        currencyFrom.toUpperCase(), currencyTo.toUpperCase(), amount);
   }
 
   @Operation(
       summary = "Convert value to multiple currencies",
       description =
           """
-            Converts the specified amount from the source currency (from)
+            Converts the specified amount from the source currency (currencyFrom)
             to multiple target currencies.
             The list of target currencies is provided as a parameter.
             """)
-  @GetMapping("/convert/{from}")
-  public Map<String, Double> convertToMultipleCurrencies(
-      @PathVariable String from,
-      @RequestParam Double amount,
+  @GetMapping("/{currencyFrom}/conversion")
+  public Set<CurrencyRate> convertToMultipleCurrencies(
+      @PathVariable String currencyFrom,
+      @RequestParam BigDecimal amount,
       @RequestParam List<String> currencies) {
-    validateFromCurrency(from);
+    validateFromCurrency(currencyFrom);
     List<String> currenciesUpperCase = currencies.stream().map(String::toUpperCase).toList();
     return exchangeRateService.convertToMultipleCurrencies(
-        from.toUpperCase(), amount, currenciesUpperCase);
+        currencyFrom.toUpperCase(), amount, currenciesUpperCase);
   }
 
-  private void validateFromCurrency(String from) {
-    if ("USD".equalsIgnoreCase(from)) {
+  private void validateFromCurrency(String currencyFrom) {
+    if ("USD".equalsIgnoreCase(currencyFrom)) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
           """
-              'USD' cannot be used as the source currency (from).
+              'USD' cannot be used as the source currency (currencyFrom).
               Please choose another currency (e.g. EUR).
               """);
     }

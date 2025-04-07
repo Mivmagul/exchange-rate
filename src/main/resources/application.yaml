@@ -13,7 +13,11 @@ spring:
       port: 6379
 
 exchange-rate:
-  default-provider: FIXER_IO # couldn't create API key for api.exchangerate.host, because of server error
+  base-currency: EUR
+  precision-scale: 6
+  provider-priorities: >
+    FIXER_IO,
+    EXCHANGE_RATE_HOST
   fixer:
     api:
       endpoint: https://data.fixer.io/api/latest

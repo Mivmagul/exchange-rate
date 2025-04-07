@@ -1,13 +1,12 @@
 package com.mivmagul.exchangerate.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-import com.mivmagul.exchangerate.data.ExchangeRateProviderType;
-import com.mivmagul.exchangerate.provider.ExchangeRateProvider;
-import com.mivmagul.exchangerate.provider.ExchangeRateProviderFactory;
+import com.mivmagul.exchangerate.dto.CurrencyRate;
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,72 +15,116 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class ExchangeRateServiceTest {
-
-  @Mock private ExchangeRateProviderFactory providerFactory;
-
-  @Mock private ExchangeRateProvider provider;
+  @Mock private ExchangeRateRetryService retryService;
 
   private ExchangeRateService service;
 
   @BeforeEach
   public void setup() {
-    when(providerFactory.getProvider(ExchangeRateProviderType.FIXER_IO)).thenReturn(provider);
+    service = new ExchangeRateService(retryService, "GBP", 2);
+  }
 
-    service = new ExchangeRateService(providerFactory, ExchangeRateProviderType.FIXER_IO);
+  @Test
+  public void testFetchRatesForBaseCurrency() {
+    // setup
+    Set<CurrencyRate> mockRates =
+        Set.of(
+            new CurrencyRate("USD", BigDecimal.valueOf(1.2)),
+            new CurrencyRate("EUR", BigDecimal.valueOf(0.85)),
+            new CurrencyRate("GBP", BigDecimal.valueOf(1.0)));
+
+    when(retryService.fetchRatesForBaseCurrency("GBP")).thenReturn(mockRates);
+
+    // execute
+    Set<CurrencyRate> result = service.getAllExchangeRates("GBP");
+
+    // verify
+    assertEquals(3, result.size());
+    assertTrue(
+        result.stream()
+            .anyMatch(
+                rate ->
+                    rate.getCurrencyCode().equals("USD")
+                        && rate.getRate().compareTo(BigDecimal.valueOf(1.2)) == 0));
+    assertTrue(
+        result.stream()
+            .anyMatch(
+                rate ->
+                    rate.getCurrencyCode().equals("EUR")
+                        && rate.getRate().compareTo(BigDecimal.valueOf(0.85)) == 0));
+    assertTrue(
+        result.stream()
+            .anyMatch(
+                rate ->
+                    rate.getCurrencyCode().equals("GBP")
+                        && rate.getRate().compareTo(BigDecimal.valueOf(1.0)) == 0));
   }
 
   @Test
   public void testGetExchangeRate() {
     // setup
-    Map<String, Object> mockResponse = Map.of("rates", Map.of("USD", 1.2, "EUR", 0.85));
-    when(provider.fetchRates("GBP")).thenReturn(mockResponse);
+    Set<CurrencyRate> mockRates =
+        Set.of(
+            new CurrencyRate("USD", BigDecimal.valueOf(1.2)),
+            new CurrencyRate("EUR", BigDecimal.valueOf(0.85)),
+            new CurrencyRate("GBP", BigDecimal.valueOf(1.0)));
+
+    when(retryService.fetchRatesForBaseCurrency("GBP")).thenReturn(mockRates);
 
     // execute
-    Number rate = service.getExchangeRate("GBP", "USD");
+    BigDecimal rate = service.getExchangeRate("GBP", "USD");
 
     // verify
-    assertEquals(1.2, rate);
-  }
-
-  @Test
-  public void testGetAllExchangeRates() {
-    // setup
-    Map<String, Object> mockResponse = Map.of("rates", Map.of("USD", 1.2, "EUR", 0.85));
-    when(provider.fetchRates("GBP")).thenReturn(mockResponse);
-
-    // execute
-    Map<String, Number> rates = service.getAllExchangeRates("GBP");
-
-    // verify
-    assertEquals(1.2, rates.get("USD"));
-    assertEquals(0.85, rates.get("EUR"));
+    assertEquals(BigDecimal.valueOf(1.2), rate);
   }
 
   @Test
   public void testConvertValue() {
     // setup
-    Map<String, Object> mockResponse = Map.of("rates", Map.of("USD", 1.2));
-    when(provider.fetchRates("GBP")).thenReturn(mockResponse);
+    Set<CurrencyRate> mockRates =
+        Set.of(
+            new CurrencyRate("USD", BigDecimal.valueOf(1.2)),
+            new CurrencyRate("EUR", BigDecimal.valueOf(0.85)),
+            new CurrencyRate("GBP", BigDecimal.valueOf(1.0)));
+
+    when(retryService.fetchRatesForBaseCurrency("GBP")).thenReturn(mockRates);
 
     // execute
-    Number convertedValue = service.convertValue("GBP", "USD", 100.0);
+    BigDecimal convertedValue = service.convertValue("GBP", "USD", BigDecimal.valueOf(100));
 
     // verify
-    assertEquals(120.0, convertedValue);
+    assertEquals(0, BigDecimal.valueOf(120).compareTo(convertedValue));
   }
 
   @Test
   public void testConvertToMultipleCurrencies() {
     // setup
-    Map<String, Object> mockResponse = Map.of("rates", Map.of("USD", 1.2, "EUR", 0.85));
-    when(provider.fetchRates("GBP")).thenReturn(mockResponse);
+    Set<CurrencyRate> mockRates =
+        Set.of(
+            new CurrencyRate("USD", BigDecimal.valueOf(1.2)),
+            new CurrencyRate("EUR", BigDecimal.valueOf(0.85)),
+            new CurrencyRate("GBP", BigDecimal.valueOf(1.0)));
+
+    when(retryService.fetchRatesForBaseCurrency("GBP")).thenReturn(mockRates);
+
+    List<String> targetCurrencies = List.of("USD", "EUR");
 
     // execute
-    Map<String, Double> conversions =
-        service.convertToMultipleCurrencies("GBP", 100.0, List.of("USD", "EUR"));
+    Set<CurrencyRate> conversions =
+        service.convertToMultipleCurrencies("GBP", BigDecimal.valueOf(100), targetCurrencies);
 
     // verify
-    assertEquals(120.0, conversions.get("USD"));
-    assertEquals(85.0, conversions.get("EUR"));
+    assertTrue(
+        conversions.stream()
+            .anyMatch(
+                rate ->
+                    rate.getCurrencyCode().equals("USD")
+                        && rate.getRate().compareTo(BigDecimal.valueOf(120)) == 0));
+    assertTrue(
+        conversions.stream()
+            .anyMatch(
+                rate ->
+                    rate.getCurrencyCode().equals("EUR")
+                        && rate.getRate().compareTo(BigDecimal.valueOf(85)) == 0));
   }
 }

@@ -17,24 +17,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.RestTemplate;
 
 @ExtendWith(MockitoExtension.class)
-public class FixerExchangeRateProviderTest {
+public class HostExchangeRateProviderTest {
 
   @Mock private RestTemplate restTemplate;
 
-  private FixerExchangeRateProvider provider;
+  private HostExchangeRateProvider provider;
 
   @BeforeEach
   public void setup() {
     provider =
-        new FixerExchangeRateProvider(
-            restTemplate, "https://data.fixer.io/api/latest", "test-access-key");
+        new HostExchangeRateProvider(
+            restTemplate, "https://api.exchangerate.host/live", "test-access-key");
   }
 
   @Test
   public void testFetchRates() {
     // setup
     String sourceCurrency = "USD";
-    String expectedUrl = "https://data.fixer.io/api/latest?access_key=test-access-key&base=USD";
+    String expectedUrl = "https://api.exchangerate.host/live?access_key=test-access-key&source=USD";
 
     ExchangeRateResponse mockResponse = new ExchangeRateResponse();
     mockResponse.setBaseCurrency("USD");

@@ -4,9 +4,11 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.mivmagul.exchangerate.dto.CurrencyRate;
 import com.mivmagul.exchangerate.service.ExchangeRateService;
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,13 +37,13 @@ public class ExchangeRateControllerTest {
     // setup
     String from = "GBP";
     String to = "USD";
-    Number mockRate = 1.2;
+    BigDecimal mockRate = BigDecimal.valueOf(1.2);
 
     when(exchangeRateService.getExchangeRate(from, to)).thenReturn(mockRate);
 
     // execute & verify
     mockMvc
-        .perform(get("/api/exchange/rate/{from}/{to}", from, to))
+        .perform(get("/api/exchange-rates/{from}/{to}", from, to))
         .andExpect(status().isOk())
         .andExpect(content().string(mockRate.toString()));
   }
@@ -50,16 +52,19 @@ public class ExchangeRateControllerTest {
   public void testGetAllExchangeRates() throws Exception {
     // setup
     String from = "GBP";
-    Map<String, Number> mockRates = Map.of("USD", 1.2, "EUR", 0.85);
+    Set<CurrencyRate> mockRates =
+        Set.of(
+            new CurrencyRate("USD", BigDecimal.valueOf(1.2)),
+            new CurrencyRate("EUR", BigDecimal.valueOf(0.85)));
 
     when(exchangeRateService.getAllExchangeRates(from)).thenReturn(mockRates);
 
     // execute & verify
     mockMvc
-        .perform(get("/api/exchange/rates/{from}", from))
+        .perform(get("/api/exchange-rates/{from}", from))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.USD").value(1.2))
-        .andExpect(jsonPath("$.EUR").value(0.85));
+        .andExpect(jsonPath("$[?(@.currencyCode == 'USD')].rate").value(1.2))
+        .andExpect(jsonPath("$[?(@.currencyCode == 'EUR')].rate").value(0.85));
   }
 
   @Test
@@ -67,15 +72,16 @@ public class ExchangeRateControllerTest {
     // setup
     String from = "GBP";
     String to = "USD";
-    Double amount = 100.0;
-    Number mockConvertedValue = 120.0;
+    BigDecimal amount = BigDecimal.valueOf(100);
+    BigDecimal mockConvertedValue = BigDecimal.valueOf(120);
 
     when(exchangeRateService.convertValue(from, to, amount)).thenReturn(mockConvertedValue);
 
     // execute & verify
     mockMvc
         .perform(
-            get("/api/exchange/convert/{from}/{to}", from, to).param("amount", amount.toString()))
+            get("/api/exchange-rates/{from}/{to}/conversion", from, to)
+                .param("amount", amount.toString()))
         .andExpect(status().isOk())
         .andExpect(content().string(mockConvertedValue.toString()));
   }
@@ -84,9 +90,12 @@ public class ExchangeRateControllerTest {
   public void testConvertToMultipleCurrencies() throws Exception {
     // setup
     String from = "GBP";
-    Double amount = 100.0;
+    BigDecimal amount = BigDecimal.valueOf(100);
     List<String> currencies = List.of("USD", "EUR");
-    Map<String, Double> mockConversions = Map.of("USD", 120.0, "EUR", 85.0);
+    Set<CurrencyRate> mockConversions =
+        Set.of(
+            new CurrencyRate("USD", BigDecimal.valueOf(120)),
+            new CurrencyRate("EUR", BigDecimal.valueOf(85)));
 
     when(exchangeRateService.convertToMultipleCurrencies(from, amount, currencies))
         .thenReturn(mockConversions);
@@ -94,19 +103,19 @@ public class ExchangeRateControllerTest {
     // execute & verify
     mockMvc
         .perform(
-            get("/api/exchange/convert/{from}", from)
+            get("/api/exchange-rates/{from}/conversion", from)
                 .param("amount", amount.toString())
                 .param("currencies", "USD", "EUR"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.USD").value(120.0))
-        .andExpect(jsonPath("$.EUR").value(85.0));
+        .andExpect(jsonPath("$[?(@.currencyCode == 'USD')].rate").value(120))
+        .andExpect(jsonPath("$[?(@.currencyCode == 'EUR')].rate").value(85));
   }
 
   @Test
   public void testValidateFromCurrency() throws Exception {
     // execute & verify
     mockMvc
-        .perform(get("/api/exchange/rate/{from}/{to}", "USD", "EUR"))
+        .perform(get("/api/exchange-rates/{from}/{to}", "USD", "EUR"))
         .andExpect(status().isBadRequest());
   }
 }

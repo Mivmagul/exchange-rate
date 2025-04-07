@@ -1,7 +1,8 @@
 package com.mivmagul.exchangerate.provider;
 
-import java.util.Map;
+import com.mivmagul.exchangerate.dto.CurrencyRate;
+import java.util.Set;
 
 public interface ExchangeRateProvider {
-  Map<String, Object> fetchRates(String source);
+  Set<CurrencyRate> fetchRates(String baseCurrency);
 }

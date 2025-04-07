@@ -20,14 +20,21 @@ repositories {
 
 ext {
     springdocOpenApiVersion = '2.7.0'
+    springRetryVersion = '2.0.11'
     googleJavaFormatVersion = '1.26.0'
+    lombokVersion = '1.18.36'
 }
 
 dependencies {
     implementation "org.springframework.boot:spring-boot-starter-web"
     implementation "org.springframework.boot:spring-boot-starter-data-redis"
     implementation "org.springframework.boot:spring-boot-starter-cache"
+    implementation "org.springframework.boot:spring-boot-starter-aop"
+    implementation "org.springframework.retry:spring-retry:${springRetryVersion}"
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocOpenApiVersion}"
+
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
